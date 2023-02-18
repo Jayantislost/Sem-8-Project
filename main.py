@@ -1,71 +1,125 @@
-import numpy as np
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
+import tkinter as tk
+from tkinter import CENTER, END, StringVar, font as tkfont
+from tkinter import messagebox, PhotoImage, filedialog
+from PIL import ImageTk, Image
+import os
+from spam_identifier import SpamIdentifier
 
-# Data Collection and Pre-Processing
-# loading the data from csv file to a pandas DataFrame
-raw_mail_data = pd.read_csv('/Users/jayantsharma/Developer/Sem 8 Project/mail_data.csv')
+class SpamIdentifierUI(tk.Tk):
+	def __init__(self, *args, **kwargs):
+		tk.Tk.__init__(self, *args, **kwargs)
+		self.title_font = tkfont.Font(family="Helvetica", size=16, weight="bold")
+		self.title("Spam Mail Identifier")
+		self.resizable(False, False)
+		self.geometry("700x350")
+		self.protocol("WM_DELETE_WINDOW", self.on_closing)
+		self.active_name = None
+		container = tk.Frame(self)
+		container.grid(sticky="nsew")
+		container.grid_rowconfigure(0, weight=1)
+		container.grid_columnconfigure(0, weight=1)
+		self.frames = {}
+		for F in (SMIHomePage, DataSetPage, SpamIdentifyPage):
+			page_name = F.__name__
+			frame = F(parent=container, controller=self)
+			self.frames[page_name] = frame
+			frame.grid(row=0, column=0, sticky="nsew")
+		self.show_frame("SMIHomePage")
 
-# replace the null values with a null stirng
-mail_data = raw_mail_data.where((pd.notnull(raw_mail_data)),'')
+		self.file_path = StringVar()
 
-# printing the first 5 rows of the dataframe
-mail_data.head()
+	def show_frame(self, page_name, **kwargs):
+		frame = self.frames[page_name]
+		frame.tkraise()
+		file_path = kwargs.get("file_path")
 
-# checking the number of rows and columns in the dataframe
-mail_data.shape
+		if file_path:
+			frame.file_path = file_path
 
-# labelling spam mail as 0; ham mail as 1;
-mail_data.loc[mail_data['Category'] == 'spam', 'Category',] = 0
-mail_data.loc[mail_data['Category'] == 'ham', 'Category',] = 1 
+	def on_closing(self):
+		if messagebox.askokcancel("Quit", "Are you sure?"):
+			self.destroy()
 
-# separating the data as text and label
-X = mail_data['Message']
-Y = mail_data['Category']
+class SMIHomePage(tk.Frame):
+	def __init__(self, parent, controller):
+		tk.Frame.__init__(self, parent)
+		self.controller = controller
 
-# Splitting the data into training data and test data
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=3)
+		render = PhotoImage(file="Assets/Images/home_page_icon.png")
+		img = tk.Label(self, image=render)
+		img.image = render
+		img.grid(row=0, rowspan=5, ipadx=50, ipady=50)
+		
+		label = tk.Label(self, text="        Spam Mail Identifier        ", font=self.controller.title_font, fg="#263942")
+		label.grid(row=0, column=5)
 
-# Feature Extraction
-# transform the text data to feature vectors that can be used as input to the Logistics regression
-feature_extraction = TfidfVectorizer(min_df = 1, stop_words='english', lowercase=True)
+		button1 = tk.Button(self, text="   Classify Spam Emails  ", fg="#ffffff", bg="#263942",command=lambda: self.controller.show_frame("DataSetPage"))
+		button3 = tk.Button(self, text="Quit", fg="#263942", bg="#ffffff", command=self.on_closing)
+		button1.grid(row=1, column=5, ipady=3, ipadx=7)
+		button3.grid(row=2, column=5, ipady=3, ipadx=32)
 
-X_train_features = feature_extraction.fit_transform(X_train)
-X_test_features = feature_extraction.transform(X_test)
+	def on_closing(self):
+		if messagebox.askokcancel("Quit", "Are you sure?"):
+			self.controller.destroy()
 
-# convert Y_train and Y_test values as integers
-Y_train = Y_train.astype('int')
-Y_test = Y_test.astype('int')
+class DataSetPage(tk.Frame):
+	def __init__(self, parent, controller):
+		tk.Frame.__init__(self, parent)
+		self.controller = controller
 
-# Training the Model
-model = LogisticRegression()
+		tk.Label(self, text="Select Dataset File", fg="#263942", font="Helvetica 12 bold").grid(row=0, column=0, pady=10, padx=5)
+		self.buttonbrowse = tk.Button(self, text="Browse", bg="#ffffff", fg="#263942", command=self.open_dataset_csv)
+		self.buttonbrowse.grid(row=1, column=0, pady=10, ipadx=5, ipady=4)
 
-# trainging the Logistic Regression model with the training data
-model.fit(X_train_features, Y_train)
+		self.buttoncanc = tk.Button(self, text="Go Back", bg="#ffffff", fg="#263942", command=lambda: self.controller.show_frame("SMIHomePage"))
+		self.buttoncanc.grid(row=1, column=1, pady=10, ipadx=5, ipady=4)
 
-# Evaluating the trained model
-# prediction on training data
-prediction_on_training_data = model.predict(X_train_features)
-accuracy_on_training_data = accuracy_score(Y_train, prediction_on_training_data)
+	def open_dataset_csv(self):
+		file = filedialog.askopenfile(mode="r", filetypes=[("CSV Files", "*.csv")])
 
-# prediction on test data
-prediction_on_test_data = model.predict(X_test_features)
-accuracy_on_test_data = accuracy_score(Y_test, prediction_on_test_data)
+		if file:
+			file_path = os.path.abspath(file.name)
+			tk.Label(self, text="Selected Dataset :", fg="#263942", font="Helvetica 12 bold").place(x=5, y=120)
+			self.selected_file = tk.Label(self, text=str(file_path), fg="#263942", font=("Helvetica 12 bold"), wraplength=680)
+			self.selected_file.place(x=5, y=155)
 
-# Building a predictive system 
-input_mail = ["I'm gonna be home soon and i don't want to talk about this stuff anymore tonight, k? I've cried enough today."]
+			self.nextbutton = tk.Button(self, text="Next", bg="#ffffff", fg="#263942", command=lambda: self.controller.show_frame("SpamIdentifyPage", file_path=file_path))
+			self.nextbutton.config(
+				height=2,
+				width=8
+			)
+			self.nextbutton.place(x=600, y=275, anchor=CENTER)
 
-# convert text to feature vectors
-input_data_features = feature_extraction.transform(input_mail)
+class SpamIdentifyPage(tk.Frame):
+	def __init__(self, parent, controller):
+		tk.Frame.__init__(self, parent)
+		self.controller = controller
+		self.file_path = None
 
-# making predcitions
-prediction = model.predict(input_data_features)
+		tk.Label(self, text="Enter/Type Your Email", fg="#263942", font='Helvetica 12 bold').grid(row=0, column=0, pady=10, padx=5)
 
+		self.input_mail = tk.Text(self, height=10, width=60, bg="lightgrey", font='Helvetica 11')
+		self.input_mail.grid(row=0, column=1, pady=10, padx=10)
+		self.classifybutton = tk.Button(self, text="Classify", bg="#ffffff", fg="#263942", command=self.classify_email)
+		self.classifybutton.config(
+			height=2,
+			width=8
+		)
+		self.classifybutton.place(x=635, y=215, anchor=CENTER)
 
-if (prediction[0]==1):
-    print('Ham mail')
-else:
-    print('Spam mail')
+	def classify_email(self):
+		sidf = SpamIdentifier(
+			dataset_path = self.file_path,
+			input_mail = self.input_mail.get("1.0", END)
+		)
+		is_spam_mail = sidf.classify_spam()
+		
+		if is_spam_mail:
+			messagebox.showwarning("Classification Result", "This is a spam mail")
+		else:
+			messagebox.showinfo("Classification Result", "This is not a spam mail")
+
+if __name__ == "__main__":
+	app = SpamIdentifierUI()
+	app.iconphoto(False, ImageTk.PhotoImage(Image.open("Assets/Images/smi_icon.ico")))
+	app.mainloop()
