@@ -50,10 +50,10 @@ class SMIHomePage(tk.Frame):
 		img.image = render
 		img.grid(row=0, rowspan=5, ipadx=50, ipady=50)
 		
-		label = tk.Label(self, text="        Spam Mail Identifier        ", font=self.controller.title_font, fg="#263942")
+		label = tk.Label(self, text="        Spam Mail Identifier        ", font=self.controller.title_font, fg="#000000")
 		label.grid(row=0, column=5)
 
-		button1 = tk.Button(self, text="   Classify Spam Emails  ", fg="#ffffff", bg="#263942",command=lambda: self.controller.show_frame("DataSetPage"))
+		button1 = tk.Button(self, text="   Classify Spam Emails  ", fg="#000000", bg="#263942",command=lambda: self.controller.show_frame("DataSetPage"))
 		button3 = tk.Button(self, text="Quit", fg="#263942", bg="#ffffff", command=self.on_closing)
 		button1.grid(row=1, column=5, ipady=3, ipadx=7)
 		button3.grid(row=2, column=5, ipady=3, ipadx=32)
@@ -88,7 +88,7 @@ class DataSetPage(tk.Frame):
 				height=2,
 				width=8
 			)
-			self.nextbutton.place(x=600, y=275, anchor=CENTER)
+			self.nextbutton.place(x=500, y=275, anchor=CENTER)
 
 class SpamIdentifyPage(tk.Frame):
 	def __init__(self, parent, controller):
@@ -105,7 +105,7 @@ class SpamIdentifyPage(tk.Frame):
 			height=2,
 			width=8
 		)
-		self.classifybutton.place(x=635, y=215, anchor=CENTER)
+		self.classifybutton.place(x=500, y=215, anchor=CENTER)
 
 	def classify_email(self):
 		sidf = SpamIdentifier(
